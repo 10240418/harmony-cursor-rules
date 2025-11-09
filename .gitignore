@@ -1,6 +1,21 @@
+# 临时文件
 .craw
+.DS_Store
+Thumbs.db
+
+# 环境配置
 .env
-.vscode
+.env.*
+.venv
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # Python
 __pycache__/
@@ -23,3 +38,13 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# 输出目录（如需要上传可注释掉）
+# harmony_cursor_rules/

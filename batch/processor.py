@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from typing import Dict, Any, List
 from crawler import WebCrawler
-from module_manager import HarmonyModuleManager
+from config.module_manager import HarmonyModuleManager
 from utils import DisplayHelper, StatisticsHelper
 from ai import ContentProcessor
 

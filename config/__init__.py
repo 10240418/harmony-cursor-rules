@@ -4,5 +4,6 @@
 """
 
 from .manager import ConfigManager, CrawlerConfig
+from .module_manager import HarmonyModuleManager
 
-__all__ = ['ConfigManager', 'CrawlerConfig']
+__all__ = ['ConfigManager', 'CrawlerConfig', 'HarmonyModuleManager']

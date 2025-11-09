@@ -56,7 +56,7 @@ class SPACrawler:
         # 初始化ArkTS规则提取器
         self.arkts_extractor = ArkTSRulesExtractor(
             web_crawler=self.web_crawler,
-            gemini_api=self.content_processor.gemini_api,
+            gemini_api=self.content_processor.ai_api,
             output_dir=self.output_dir
         )
         print("✅ ArkTS规则提取器初始化成功")

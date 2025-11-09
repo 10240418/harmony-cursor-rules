@@ -1,84 +1,101 @@
 # HarmonyOS 开发规则生成器
 
-## 📖 项目背景
+自动爬取华为官方 HarmonyOS 开发文档，智能提取最佳实践并生成 Cursor IDE 开发规则。
 
-HarmonyOS作为新兴的移动操作系统，由于发展历史相对较短，主流AI模型在预训练阶段缺乏充足的HarmonyOS开发语料。这导致Cursor等AI开发工具在生成HarmonyOS相关代码时效果不佳，开发者难以获得准确的开发建议。
+详细介绍：https://mp.weixin.qq.com/s/gLgP7gGU0pmGc2x1hS-0UQ
 
-本项目旨在解决这一痛点，通过智能爬取华为官方HarmonyOS开发文档，自动提取最佳实践并生成符合Cursor IDE规范的开发规则文件，为开发者提供专业、准确的HarmonyOS开发指导。
+## 🚀 快速开始
 
-详细讲解请阅读文章：https://mp.weixin.qq.com/s/gLgP7gGU0pmGc2x1hS-0UQ
+### 使用 Docker（推荐）
 
-## 🚀 核心功能
-
-- **📋 智能文档爬取**: 自动爬取华为官方HarmonyOS最佳实践文档，支持SPA页面解析
-- **📝 UI开发规范生成**: 基于Gemini AI智能提取界面开发最佳实践，生成结构化的开发规范
-- **🔧 ArkTS迁移规则**: 自动提取TypeScript到ArkTS迁移过程中的Lint规则和语法约束
-
-## 📁 harmony_cursor_rules 说明
-
-项目运行后会生成 `harmony_cursor_rules` 目录，包含按模块分类的开发规范文件。具体涉及的模块配置可查看 `harmony_modules_config.json` 文件：
-
-### 目录结构
-```
-harmony_cursor_rules/
-├── component_encapsulation_reuse/    # 组件封装与复用
-├── layout_dialog/                    # 布局与弹窗
-├── animation_transition/             # 动画与转场
-├── performance_optimization/         # 性能优化
-├── ...                              # 其他模块
-└── final_cursor_rules/              # 最终整合的规则文件
-    ├── component_encapsulation_reuse.cursorrules.md
-    ├── layout_dialog.cursorrules.md
-    ├── arkts-lint-rules.md           # ArkTS迁移规则
-    └── ...
-```
-
-> 💡 **快速使用**: 开发者只需将 `final_cursor_rules` 目录下的规则文件配置到Cursor IDE中即可获得专业的HarmonyOS开发提示。如果需要生成更多的规则文件，可在`harmony_modules_config.json`追加配置。
-
-### 参考文档
-生成的开发规则均基于华为官方权威文档：
-- **界面开发最佳实践**: [HarmonyOS 最佳实践 - 界面开发](https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-ui-dynamic-operations)
-- **ArkTS迁移指南**: [TypeScript到ArkTS迁移指南](https://developer.huawei.com/consumer/en/doc/harmonyos-guides-V14/typescript-to-arkts-migration-guide-V14)
-
-## 🛠️ 使用方式
-
-### 环境准备
-1. **安装依赖**
 ```bash
+# 1. 配置 API 密钥
+cp env.example .env
+# 编辑 .env 文件，设置 AI_PROVIDER 和 API 密钥
+
+# 2. 运行
+./docker-run.sh
+```
+
+### 本地 Python 环境
+
+```bash
+# 1. 安装依赖
 pip install -r Requirements.txt
-```
 
-2. **配置API密钥**
-```bash
-# 设置Gemini API密钥
-export GEMINI_API_KEY="your-gemini-api-key"
+# 2. 配置 API 密钥
+cp env.example .env
+# 编辑 .env 文件
 
-# 可选：设置自定义API端点（如使用代理或自定义服务）
-export GEMINI_BASE_URL="https://your-custom-api-endpoint.com"
-```
-
-### 运行程序
-```bash
-# 标准运行
+# 3. 运行
 python main.py
-
-# 调试模式（保存HTML文件）
-python main.py --debug
 ```
 
-### 使用生成的规则
-1. 在你的HarmonyOS项目根目录创建 `.cursorrules` 文件
-2. 将 `final_cursor_rules` 目录中相关 `.md` 文件的内容复制到 `.cursorrules` 文件中
+## ⚙️ 配置说明
 
-## 📊 输出示例
+编辑 `.env` 文件：
 
-生成的开发规则文件结构完整，包含：
-- **核心原则**: HarmonyOS开发的基础设计理念和架构原则
-- **推荐做法**: 经过验证的最佳实践和标准代码模式
-- **禁止做法**: 需要避免的错误写法和反模式
-- **代码示例**: 正确与错误写法的对比演示
-- **注意事项**: 关键的开发要点和性能优化建议
+```bash
+# 使用 SiliconFlow（推荐，国内可直接访问）
+AI_PROVIDER=siliconflow
+SILICONFLOW_API_KEY=你的密钥
+
+# 或使用 Gemini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=你的密钥
+```
+
+**获取 SiliconFlow API 密钥：**
+1. 访问 https://siliconflow.cn 注册
+2. 进入 https://cloud.siliconflow.cn/account/ak 创建密钥
+
+## 📁 输出结果
+
+生成的规则文件位于：`harmony_cursor_rules/final_cursor_rules/`
+
+将生成的 `.md` 文件内容复制到你的 HarmonyOS 项目的 `.cursorrules` 文件中即可使用。
+
+## 🐳 Docker 命令参考
+
+```bash
+# 一键运行
+./docker-run.sh
+
+# 或手动运行
+docker-compose up --build
+
+# 后台运行
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止
+docker-compose down
+
+# 调试模式
+docker-compose run --rm harmony-crawler python main.py --debug
+```
+
+## 📚 功能特性
+
+- ✅ 智能爬取华为官方 HarmonyOS 文档
+- ✅ 支持多种 AI 模型（Gemini / SiliconFlow）
+- ✅ 自动提取最佳实践和开发规范
+- ✅ 生成 ArkTS Lint 规则
+- ✅ Docker 一键部署
+
+## 🔧 配置文件
+
+- `env.example` - 环境变量模板
+- `harmony_modules_config.json` - 爬取模块配置
+- `docker-compose.yml` - Docker 编排配置
+
+## 📖 参考文档
+
+- [HarmonyOS 界面开发最佳实践](https://developer.huawei.com/consumer/cn/doc/best-practices/bpta-ui-dynamic-operations)
+- [TypeScript 到 ArkTS 迁移指南](https://developer.huawei.com/consumer/en/doc/harmonyos-guides-V14/typescript-to-arkts-migration-guide-V14)
 
 ---
 
-*本项目基于AI技术自动化提取华为官方权威文档，为HarmonyOS开发者提供专业、标准的开发规范指导*
+*基于 AI 自动化提取华为官方文档，为 HarmonyOS 开发者提供专业的开发规范指导*

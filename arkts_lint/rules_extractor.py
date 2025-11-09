@@ -6,27 +6,28 @@ ArkTS规则提取器模块
 import re
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from bs4 import BeautifulSoup
 from crawler import WebCrawler
 from config import ConfigManager
-from gemini_api import GeminiAPI
+from ai.gemini_api import GeminiAPI
+from ai.siliconflow_api import SiliconFlowAPI
 
 
 class ArkTSRulesExtractor:
     """ArkTS规则提取器"""
 
-    def __init__(self, web_crawler: WebCrawler, gemini_api: GeminiAPI, output_dir: Path = None):
+    def __init__(self, web_crawler: WebCrawler, gemini_api: Union[GeminiAPI, SiliconFlowAPI, None], output_dir: Path = None):
         """
         初始化规则提取器
 
         Args:
             web_crawler: 网页爬虫实例
-            gemini_api: Gemini API实例
+            gemini_api: AI API实例（支持 GeminiAPI 或 SiliconFlowAPI）
             output_dir: 输出目录路径，默认为None时使用默认路径
         """
         self.web_crawler = web_crawler
-        self.gemini_api = gemini_api
+        self.ai_api = gemini_api  # 改名为 ai_api 以保持一致性
 
         # 设置输出目录
         if output_dir is None:
@@ -176,8 +177,8 @@ class ArkTSRulesExtractor:
             # 构建AI提示词
             extraction_prompt = self._build_arkts_extraction_prompt(text_content)
 
-            # 直接使用Gemini API提取规则
-            ai_response = self.gemini_api.generate_text(extraction_prompt)
+            # 直接使用AI API提取规则
+            ai_response = self.ai_api.generate_text(extraction_prompt)
 
             if not ai_response:
                 return {
@@ -487,10 +488,15 @@ ArkTS（TypeScript的子集）的Lint规则，用于确保代码符合HarmonyOS�
         Returns:
             Dict: 统计信息
         """
+        api_type = "unknown"
+        if self.ai_api:
+            api_type = "gemini" if isinstance(self.ai_api, GeminiAPI) else "siliconflow"
+        
         return {
             'web_crawler_ready': self.web_crawler is not None,
-            'ai_processor_ready': self.gemini_api is not None,
+            'ai_processor_ready': self.ai_api is not None,
+            'ai_api_type': api_type,
             'output_directory': str(self.output_dir),
             'output_directory_exists': self.output_dir.exists(),
-            'extraction_method': 'AI-powered (Gemini)'
+            'extraction_method': f'AI-powered ({api_type})'
         }

@@ -3,23 +3,29 @@ AI内容处理器模块
 提供最佳实践提取和整合功能
 """
 
-from typing import List, Dict, Any, Optional
+import os
+from typing import List, Dict, Any, Optional, Union
 from pathlib import Path
-from gemini_api import GeminiAPI
+from dotenv import load_dotenv
+from .gemini_api import GeminiAPI
+from .siliconflow_api import SiliconFlowAPI
 from .prompts import PromptBuilder
+
+# 加载环境变量
+load_dotenv()
 
 
 class BestPracticesExtractor:
     """最佳实践提取器"""
 
-    def __init__(self, gemini_api: GeminiAPI):
+    def __init__(self, ai_api: Union[GeminiAPI, SiliconFlowAPI]):
         """
         初始化提取器
 
         Args:
-            gemini_api: Gemini API实例
+            ai_api: AI API实例（支持 GeminiAPI 或 SiliconFlowAPI）
         """
-        self.gemini_api = gemini_api
+        self.ai_api = ai_api
         self.prompt_builder = PromptBuilder()
 
     def extract_from_html(
@@ -41,7 +47,7 @@ class BestPracticesExtractor:
         Returns:
             str: 生成的最佳实践markdown内容
         """
-        if not self.gemini_api:
+        if not self.ai_api:
             return self._get_no_api_fallback(module_name, url)
 
         try:
@@ -53,8 +59,8 @@ class BestPracticesExtractor:
                 html_content=html_content
             )
 
-            # 调用Gemini API生成最佳实践
-            best_practices = self.gemini_api.generate_text(prompt)
+            # 调用AI API生成最佳实践
+            best_practices = self.ai_api.generate_text(prompt)
             return best_practices
 
         except Exception as e:
@@ -78,7 +84,7 @@ class BestPracticesExtractor:
         return f"""# {module_name.replace('_', ' ').title()} - 最佳实践
 
 ## 📋 概述
-无法自动提取最佳实践，Gemini API未初始化。
+无法自动提取最佳实践，AI API未初始化。
 
 ## 🔗 原始资源
 - 源链接：{url}
@@ -91,14 +97,14 @@ class BestPracticesExtractor:
 class PracticesIntegrator:
     """实践整合器"""
 
-    def __init__(self, gemini_api: GeminiAPI):
+    def __init__(self, ai_api: Union[GeminiAPI, SiliconFlowAPI]):
         """
         初始化整合器
 
         Args:
-            gemini_api: Gemini API实例
+            ai_api: AI API实例（支持 GeminiAPI 或 SiliconFlowAPI）
         """
-        self.gemini_api = gemini_api
+        self.ai_api = ai_api
         self.prompt_builder = PromptBuilder()
 
     def integrate_practices(
@@ -118,7 +124,7 @@ class PracticesIntegrator:
         Returns:
             str: 整合后的Cursor Rules内容
         """
-        if not self.gemini_api or not practices:
+        if not self.ai_api or not practices:
             return self._get_no_integration_fallback(module_name)
 
         try:
@@ -133,8 +139,8 @@ class PracticesIntegrator:
                 practices_content=practices_summary
             )
 
-            # 调用Gemini API生成整合的Cursor Rules
-            integrated_content = self.gemini_api.generate_text(prompt)
+            # 调用AI API生成整合的Cursor Rules
+            integrated_content = self.ai_api.generate_text(prompt)
             return integrated_content
 
         except Exception as e:
@@ -195,28 +201,37 @@ class PracticesIntegrator:
 class ContentProcessor:
     """内容处理器主类"""
 
-    def __init__(self, gemini_api: Optional[GeminiAPI] = None):
+    def __init__(self, ai_api: Optional[Union[GeminiAPI, SiliconFlowAPI]] = None):
         """
         初始化内容处理器
 
         Args:
-            gemini_api: Gemini API实例，如果为None则自动初始化
+            ai_api: AI API实例，如果为None则根据环境变量自动选择并初始化
         """
-        if gemini_api is None:
+        if ai_api is None:
+            # 根据环境变量决定使用哪个API
+            api_provider = os.getenv('AI_PROVIDER', 'gemini').lower()
+            
             try:
-                self.gemini_api = GeminiAPI()
-                self.api_available = True
+                if api_provider == 'siliconflow':
+                    print("🔄 使用 SiliconFlow API")
+                    self.ai_api = SiliconFlowAPI()
+                    self.api_available = True
+                else:
+                    print("🔄 使用 Gemini API")
+                    self.ai_api = GeminiAPI()
+                    self.api_available = True
             except Exception as e:
-                print(f"⚠️ Gemini API 初始化失败: {e}")
-                self.gemini_api = None
+                print(f"⚠️ AI API 初始化失败: {e}")
+                self.ai_api = None
                 self.api_available = False
         else:
-            self.gemini_api = gemini_api
-            self.api_available = gemini_api is not None
+            self.ai_api = ai_api
+            self.api_available = ai_api is not None
 
         # 初始化子处理器
-        self.extractor = BestPracticesExtractor(self.gemini_api)
-        self.integrator = PracticesIntegrator(self.gemini_api)
+        self.extractor = BestPracticesExtractor(self.ai_api)
+        self.integrator = PracticesIntegrator(self.ai_api)
 
     def is_api_available(self) -> bool:
         """
@@ -320,9 +335,14 @@ class ContentProcessor:
         Returns:
             Dict: 统计信息
         """
+        api_type = "unknown"
+        if self.ai_api:
+            api_type = "gemini" if isinstance(self.ai_api, GeminiAPI) else "siliconflow"
+        
         return {
             'api_available': self.api_available,
+            'api_type': api_type,
             'extractor_ready': self.extractor is not None,
             'integrator_ready': self.integrator is not None,
-            'gemini_api_configured': self.gemini_api is not None
+            'ai_api_configured': self.ai_api is not None
         }

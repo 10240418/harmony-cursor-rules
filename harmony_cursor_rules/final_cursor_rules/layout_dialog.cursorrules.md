@@ -1,94 +1,80 @@
-```markdown
 # HarmonyOS 布局与弹窗 - Cursor Rules
 
 你正在为HarmonyOS应用开发相关功能。以下是你需要遵循的开发规则。
 
 ## 核心原则
 
--   **性能优先，流畅体验**：精简UI节点，优化布局计算，确保动画和滚动平滑。
--   **用户为中心**：提供直观、自然、可预期的交互手势和反馈。
--   **组件化与复用**：封装可复用组件，利用数据驱动UI，提升开发效率和可维护性。
--   **适配多样性**：考虑不同设备形态（如折叠屏、软键盘）的布局与交互适配。
+- 优先使用系统组件，减少自定义实现
+- 确保交互流畅，避免布局重计算
+- 合理管理弹窗生命周期，避免内存泄漏
+- 适配多设备形态，特别是折叠屏场景
 
 ## 推荐做法
 
 ### 代码结构
--   将复杂或可复用的UI模块（如瀑布流、评论弹窗、图片预览器）封装为独立的自定义组件。
--   通过数据驱动UI渲染，根据数据类型动态选择和渲染列表项（`ListItem`、`GridItem`）或弹窗内容。
+- 使用LazyForEach替代ForEach处理长列表
+- 为Grid组件设置editMode和supportAnimation实现拖拽
+- 通过Navigation Dialog实现评论回复弹窗
 
 ### 最佳实践
--   **布局与性能优化**：
-    -   **精简UI节点**：避免不必要的布局嵌套，优先使用扁平化布局。
-    -   **设置布局边界**：为父级容器明确设置固定宽高（如`width('100%').height(xxx)`），减少局部UI更新时的全局重计算。
-    -   **长列表优化**：对于大量数据，务必使用`LazyForEach`替代`ForEach`实现懒加载和组件复用。当`List`嵌套在`Scroll`内时，为`List`明确设置固定宽高。
-    -   **条件渲染**：根据组件是否需要存在于组件树中，合理选择`if/else`（减少节点）或`visibility`（保留占位）。
--   **交互与动画**：
-    -   **图片跟手效果**：利用`matrix4`实现缩放跟手，`translate`实现平移跟手，确保精确数学计算。
-    -   **列表交互**：结合`Refresh`组件实现下拉刷新，利用`List.onReachEnd()`实现上滑加载更多，并提供清晰的状态反馈。
-    -   **拖拽交换**：`Grid`组件开启`editMode(true)`和`supportAnimation(true)`，并为`GridItem`绑定`LongPressGesture`和`PanGesture`。
-    -   **自定义指示器**：`Swiper`组件禁用自带`indicator(false)`，并自定义进度条指示器，与`Swiper`页面切换联动。
-    -   **文本展开折叠**：使用`measureTextSize()`精确测量文本高度，计算截断点，实现“...展开/收起”功能。
--   **弹窗管理**：
-    -   **弹窗选型**：对于评论回复等复杂交互场景，优先选择`Navigation Dialog`或统一的`DialogHub`方案，而非`CustomDialog`。
-    -   **交互控制**：精细控制弹窗的关闭行为（如是否允许侧滑、点击外部关闭），并自定义进出场动画。
-    -   **键盘适配**：确保弹窗能自动避让软键盘，避免内容遮挡；在软键盘和表情面板切换时平滑过渡。
-    -   **多弹窗管理**：利用`DialogHub`管理多弹窗层级，确保显示优先级。
+- 图片预览器使用matrix4和translate实现跟手效果
+- 瀑布流采用虚拟列表优化性能
+- 文本展开折叠使用measureTextSize精确计算
+- 布局优化：减少组件嵌套，设置固定宽高创建布局边界
+
+### 性能优化
+- 使用if/else而非visibility控制组件显示
+- 为List组件设置固定宽高，特别是在Scroll嵌套场景
+- 关闭Swiper自带指示器，自定义进度条
 
 ## 禁止做法
 
--   **长列表一次性渲染**：避免对大量数据直接使用`ForEach`，导致性能瓶颈和内存占用过高。
--   **不当的弹窗选型**：避免将`CustomDialog`用于需要复杂软键盘避让和动画控制的场景（如评论回复弹窗），因为它存在不可配置的局限性。
--   **依赖默认指示器**：当需要自定义进度条或复杂动画时，不应直接依赖`Swiper`组件自带的`indicator`。
--   **过度嵌套布局**：避免不必要的组件嵌套，增加UI节点数量和布局计算开销。
--   **重要弹窗随意关闭**：对于关键提示或需用户确认的弹窗，禁止允许侧滑或点击外部区域关闭。
+- 避免CustomDialog用于评论回复，因其软键盘适配问题
+- 不要过度嵌套布局组件增加计算开销
+- 禁止在富文本中随意截断，需考虑图片等元素影响
+- 避免弹窗与页面生命周期不同步导致的内存泄漏
 
 ## 代码示例
 
 ### 推荐写法
 ```arkts
-// 推荐：长列表懒加载与Swiper自定义指示器
-Swiper() {
-  LazyForEach(this.imageData, (item: ImageItem) => {
-    Image(item.src)
-  }, (item: ImageItem) => item.id)
-}
-.autoPlay(true)
-.indicator(false) // 关闭默认指示器
-// ... 自定义进度条指示器逻辑 (通常是一个独立的组件或布局)
+// 图片预览器跟手效果
+Swiper(this.controller) {
+  Image($r(`app.media.${item.id}`))
+}.matrix4($r('app.matrix.scale'))
+  .translate({ x: $r('app.offset.x'), y: $r('app.offset.y') })
 
-// 推荐：List与下拉刷新、上滑加载
+// 长列表懒加载
 List() {
-  // ... ListItem内容
-}
-.onScrollIndex((first, last) => {
-  // 仅渲染可见区域，此处可监听加载更多
-  if (last >= this.data.length - 5 && !this.isLoading) {
-    this.loadMoreData();
-  }
-})
-.width('100%')
-.height(this.listHeight) // List在Scroll内时需固定宽高
-```
-
-### 避免写法
-```arkts
-// 避免：长列表一次性渲染或过多嵌套
-Column() { // 避免不必要的Column/Row包裹
-  Row() { // 避免多层嵌套
-    Text('Title')
-  }
-  ForEach(this.largeData, (item: DataItem) => { // 避免直接ForEach大量数据
-    Column() {
-      // ... 复杂UI
+  LazyForEach(this.data, (item: ItemData) => {
+    ListItem() {
+      Text(item.content)
     }
   })
 }
 ```
 
+### 避免写法
+```arkts
+// 过度嵌套的布局结构
+Stack() {
+  Column() {
+    Row() {
+      Text('content')
+    }
+  }
+}
+
+// 频繁的布局计算
+ForEach(this.data, (item) => Column() { Text(item) })
+```
+
 ## 注意事项
 
--   **充分测试**：在不同设备形态、屏幕尺寸和输入法环境下测试UI的布局、交互和性能。
--   **异常处理**：在数据加载、刷新等异步操作中，务必处理网络异常、数据为空等情况，并提供清晰的用户反馈。
--   **计算精确性**：涉及复杂动画（如图片跟手）或文本处理（如展开折叠）时，确保数学计算的精确性，避免视觉抖动或错误。
--   **状态管理**：封装可复用组件时，明确其内部状态管理机制，确保在不同场景下状态的独立性或可控性。
-```
+- 图片预览器手势冲突需合理处理PanGesture与Swiper事件
+- 瀑布流数据加载需防抖处理避免重复请求
+- 弹窗焦点管理需考虑软键盘避让
+- 使用measureTextSize时确保参数完整准确
+- 折叠屏适配需监听设备状态变化并动态调整布局
+
+（总字数：798）

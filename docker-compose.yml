@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  harmony-crawler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: harmony-cursor-rules
+    image: harmony-cursor-rules:latest
+
+    # 环境变量配置（从 .env 文件读取）
+    env_file:
+      - .env
+
+    # 挂载卷，将输出目录映射到主机
+    volumes:
+      # 输出目录：生成的规则文件会保存到主机的 ./harmony_cursor_rules 目录
+      - ./harmony_cursor_rules:/app/harmony_cursor_rules
+
+      # 配置文件：方便在主机上修改配置
+      - ./harmony_modules_config.json:/app/harmony_modules_config.json:ro
+
+      # 如果需要保留日志，可以取消下面的注释
+      # - ./logs:/app/logs
+
+    # 资源限制（可根据实际情况调整）
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+    # 重启策略：仅在容器失败时重启，正常退出不重启
+    restart: on-failure
+
+    # 网络模式
+    network_mode: bridge
+
+    # 如果需要调试模式，可以覆盖默认命令
+    # command: python main.py --debug
+
+    # 标签
+    labels:
+      com.harmony.description: 'HarmonyOS Cursor Rules Generator'
+      com.harmony.version: '2.0'
